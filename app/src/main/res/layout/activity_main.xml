@@ -31,6 +31,13 @@
         android:layout_height="wrap_content"
         android:text="Calculate Path" />
 
+    <Button
+        android:id="@+id/btnRunJps"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="JPS Calculate Path" />
+
+
     <TextView
         android:id="@+id/tvStatus"
         android:layout_width="match_parent"

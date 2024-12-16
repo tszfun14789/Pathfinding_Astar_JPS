@@ -44,6 +44,11 @@ public class MainActivity extends AppCompatActivity {
     private ProgressBar progressBar;
     private static scaleanddrag scaleanddrag;
 
+    //JPS
+    private boolean isFirstJpsRun = true;  // Track if it's the first JPS run
+    private JumpPointPreprocessor jpp;    // JPS Preprocessor instance
+    private int[][] precomputedGrid;
+
 
     @SuppressLint("ClickableViewAccessibility")
     @Override
@@ -54,6 +59,9 @@ public class MainActivity extends AppCompatActivity {
         Button btnUploadMap = findViewById(R.id.btnUploadMap);
         Button btnSelectPoints = findViewById(R.id.btnSelectPoints);
         Button btnCalculatePath = findViewById(R.id.btnCalculatePath);
+        Button btnRunJps = findViewById(R.id.btnRunJps);  // JPS Button
+
+
         mapImageView = findViewById(R.id.mapImageView);
         scaleanddrag = new scaleanddrag();
         tvStatus = findViewById(R.id.tvStatus);
@@ -78,7 +86,34 @@ public class MainActivity extends AppCompatActivity {
                 updateStatus("Points reset. Please select start and end points.");
             }
         });
+        btnRunJps.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                if (mapBitmap == null) {
+                    updateStatus("Please upload a map first.");
+                    return;
+                }
 
+                if (Constants.startPoint == null || Constants.endPoint == null) {
+                    updateStatus("Please select start and end points.");
+                    return;
+                }
+
+                if (isFirstJpsRun) {
+                    // Preprocess jump points on the first run
+                    precomputedGrid = getGridFromBitmap(mapBitmap);
+                    JpsGrid jpsGrid = new JpsGrid(precomputedGrid);
+                    jpp = new JumpPointPreprocessor(jpsGrid);
+
+                    updateStatus("Preprocessing jump points...");
+                    new PreprocessJumpPointsTask().execute();
+                } else {
+                    // Perform the JPS search on subsequent runs
+                    updateStatus("Running JPS...");
+                    new RunJpsTask().execute();
+                }
+            }
+        });
         // Enable touch interaction for point selection
         mapImageView.setOnTouchListener(scaleanddrag::onTouch);
 
@@ -134,6 +169,56 @@ public class MainActivity extends AppCompatActivity {
         });
     }
 
+    private class PreprocessJumpPointsTask extends AsyncTask<Void, Void, Void> {
+        @Override
+        protected void onPreExecute() {
+            super.onPreExecute();
+            progressBar.setVisibility(View.VISIBLE);
+        }
+
+        @Override
+        protected Void doInBackground(Void... voids) {
+            jpp.precomputeJumpPoints();
+            return null;
+        }
+
+        @Override
+        protected void onPostExecute(Void aVoid) {
+            super.onPostExecute(aVoid);
+            progressBar.setVisibility(View.INVISIBLE);
+            isFirstJpsRun = false;  // Update flag after preprocessing
+            updateStatus("Jump points preprocessed. Ready for JPS search.");
+        }
+    }
+    private class RunJpsTask extends AsyncTask<Void, Void, List<JpsNode>> {
+        @Override
+        protected void onPreExecute() {
+            super.onPreExecute();
+            progressBar.setVisibility(View.VISIBLE);
+        }
+
+        @Override
+        protected List<JpsNode> doInBackground(Void... voids) {
+            JpsNode startNode = new JpsNode((int) Constants.startPoint.x, (int) Constants.startPoint.y);
+            JpsNode endNode = new JpsNode((int) Constants.endPoint.x, (int) Constants.endPoint.y);
+
+            return jpp.searchWithPrecomputedJPS(startNode, endNode);
+        }
+
+        @Override
+        protected void onPostExecute(List<JpsNode> path) {
+            super.onPostExecute(path);
+            progressBar.setVisibility(View.INVISIBLE);
+
+            if (path != null && !path.isEmpty()) {
+                updateStatus("Path found with " + path.size() + " steps.");
+                drawJPSPathOnMap(mapBitmap, path);
+//                drawPathOnMap(mapBitmap, path);  // Draw the path on the map
+            } else {
+                updateStatus("No path found.");
+            }
+        }
+    }
     // Method to open the gallery and allow the user to pick an image
     private void openGallery() {
         Intent intent = new Intent(Intent.ACTION_PICK, MediaStore.Images.Media.EXTERNAL_CONTENT_URI);
@@ -268,4 +353,28 @@ public class MainActivity extends AppCompatActivity {
         // Set the modified bitmap with the drawn path back to the ImageView
         mapImageView.setImageBitmap(mutableMap);
     }
+
+    public void drawJPSPathOnMap(Bitmap originalMap, List<JpsNode> path) {
+        // Create a mutable bitmap from the original map (so we can modify it)
+        Bitmap mutableMap = originalMap.copy(Bitmap.Config.ARGB_8888, true);
+
+        // Create a Canvas to draw on the mutable bitmap
+        Canvas canvas = new Canvas(mutableMap);
+
+        // Set up the paint for the path (for example, red color and stroke width)
+        Paint paint = new Paint();
+        paint.setColor(Color.RED);   // Color of the path (you can customize)
+        paint.setStrokeWidth(1);     // Line width for the path
+
+        // Loop through the nodes in the path and draw a circle for each
+        for (JpsNode jpsNode : path) {
+            float x = jpsNode.x;  // Get the X coordinate
+            float y = jpsNode.y;  // Get the Y coordinate
+            canvas.drawCircle(x, y, 1, paint);  // Draw a small circle at each node's position
+        }
+
+        // Set the modified bitmap with the drawn path back to the ImageView
+        mapImageView.setImageBitmap(mutableMap);
+    }
+
 }
