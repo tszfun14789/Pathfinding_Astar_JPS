@@ -42,7 +42,9 @@ public class AstarAlgorithm {
                     continue; // Skip already visited nodes
                 }
 
-                int tentativeGCost = current.gCost + 1;
+//                int tentativeGCost = current.gCost + 1;
+                int stepCost = (Math.abs(direction[0]) + Math.abs(direction[1])) == 2 ? 14 : 10; // 14 for diagonal, 10 for horizontal/vertical
+                int tentativeGCost = current.gCost + stepCost;
                 if (tentativeGCost < neighbor.gCost) {
                     neighbor.gCost = tentativeGCost;
                     neighbor.hCost = calculateHCost(neighbor, goal);
