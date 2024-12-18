@@ -12,4 +12,7 @@ public enum Direction {
         this.dx = dx;
         this.dy = dy;
     }
+    public boolean isDiagonal() {
+        return dx != 0 && dy != 0;
+    }
 }

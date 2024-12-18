@@ -161,7 +161,25 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void onClick(View v) {
                 if (Constants.startPoint != null && Constants.endPoint != null) {
-                    new CalculatePathTask().execute();  // Use AsyncTask to calculate path
+//                    new CalculatePathTask().execute();  // Use AsyncTask to calculate path
+                    int[][] gridData = new int[][] {
+                            {0, 0, 0, 0, 0},
+                            {0, 0, 0, 0, 0},
+                            {0, 1, 1, 0, 0},
+                            {0, 0, 0, 1, 0},
+                            {0, 0, 0, 0, 0}
+                    };
+
+                    JpsGrid jpsGrid = new JpsGrid(gridData);  // Using the constructor that takes a grid
+
+// Log walkable grid
+                    for (int i = 0; i < jpsGrid.width; i++) {
+                        System.out.print("Row " + i + ": ");
+                        for (int j = 0; j < jpsGrid.height; j++) {
+                            System.out.print(jpsGrid.walkable[i][j] ? "0 " : "X ");  // 'X' for obstacles, '0' for walkable
+                        }
+                        System.out.println();
+                    }
                 } else {
                     updateStatus("Please select both start and end points.");
                 }
@@ -201,6 +219,10 @@ public class MainActivity extends AppCompatActivity {
         protected List<JpsNode> doInBackground(Void... voids) {
             JpsNode startNode = new JpsNode((int) Constants.startPoint.x, (int) Constants.startPoint.y);
             JpsNode endNode = new JpsNode((int) Constants.endPoint.x, (int) Constants.endPoint.y);
+            System.out.println("Start Node: (" + startNode.x + ", " + startNode.y + ")");
+            System.out.println("End Node: (" + endNode.x + ", " + endNode.y + ")");
+
+
 
             return jpp.searchWithPrecomputedJPS(startNode, endNode);
         }

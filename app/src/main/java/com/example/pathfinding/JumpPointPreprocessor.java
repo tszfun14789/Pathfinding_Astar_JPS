@@ -21,12 +21,22 @@ public class JumpPointPreprocessor {
     // Precompute all jump points for the grid
     public void precomputeJumpPoints() {
         jumpPointsMap.clear();
-
+        for (int i = 0; i < grid.width; i++) {
+            System.out.print("Row " + i + ": ");
+            for (int j = 0; j < grid.height; j++) {
+                System.out.print(grid.walkable[i][j] ? "0 " : "X ");  // 'X' for obstacles, '0' for walkable
+            }
+            System.out.println();
+        }
         for (int x = 0; x < grid.width; x++) {
             for (int y = 0; y < grid.height; y++) {
                 JpsNode start = new JpsNode(x, y);
-                if (!grid.isWalkable(x, y)) continue; // Skip obstacles
-
+//                if (!grid.isWalkable(x, y)) continue; // Skip obstacles
+                if (!grid.isWalkable(x, y)) {
+                    // Point is an obstacle, print a message and skip
+                    System.out.println("Node (" + x + ", " + y + ") is an obstacle.");
+                    continue;
+                }
                 List<JpsNode> jumpPoints = new ArrayList<>();
                 for (Direction dir : Direction.values()) { // Check all 8 directions
                     JpsNode jumpPoint = findJumpPoint(start, dir, grid);
@@ -36,6 +46,16 @@ public class JumpPointPreprocessor {
                 }
                 jumpPointsMap.put(start, jumpPoints);
             }
+        }
+
+        // Print precomputed jump points
+        System.out.println("Precomputed Jump Points:");
+        for (Map.Entry<JpsNode, List<JpsNode>> entry : jumpPointsMap.entrySet()) {
+            System.out.print("Node " + entry.getKey() + " -> Jump Points: ");
+            for (JpsNode jp : entry.getValue()) {
+                System.out.print("(" + jp.x + ", " + jp.y + ") ");
+            }
+            System.out.println();
         }
     }
 
@@ -48,13 +68,25 @@ public class JumpPointPreprocessor {
             x += dir.dx;
             y += dir.dy;
 
-            // Simplified logic: If a forced neighbor exists, return this as a jump point
+            // Stop if out of grid boundaries
+            if (!grid.isInBounds(x, y)) {
+                return null;
+            }
+
+            // Check for forced neighbors
             if (grid.hasForcedNeighbor(x, y, dir)) {
                 return new JpsNode(x, y);
+            }
+
+            // Stop for obstacles
+            if (!grid.isWalkable(x, y)) {
+                return null;
             }
         }
         return null;
     }
+
+
 
     // Save the precomputed jump points to a file
     public void saveJumpPointsToFile(String filePath) throws IOException {

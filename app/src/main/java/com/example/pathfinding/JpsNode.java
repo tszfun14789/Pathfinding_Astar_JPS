@@ -16,7 +16,10 @@ class JpsNode implements Comparable<JpsNode> {
     public int compareTo(JpsNode other) {
         return Double.compare(this.f, other.f);
     }
-
+    @Override
+    public String toString() {
+        return "(" + x + ", " + y + ")";
+    }
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
