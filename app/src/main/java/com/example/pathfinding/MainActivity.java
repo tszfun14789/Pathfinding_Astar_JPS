@@ -388,15 +388,22 @@ public class MainActivity extends AppCompatActivity {
         paint.setColor(Color.RED);   // Color of the path (you can customize)
         paint.setStrokeWidth(1);     // Line width for the path
 
-        // Loop through the nodes in the path and draw a circle for each
-        for (JpsNode jpsNode : path) {
-            float x = jpsNode.x;  // Get the X coordinate
-            float y = jpsNode.y;  // Get the Y coordinate
-            canvas.drawCircle(x, y, 1, paint);  // Draw a small circle at each node's position
+        // Loop through the nodes in the path and draw a line between consecutive points
+        for (int i = 0; i < path.size() - 1; i++) {
+            JpsNode start = path.get(i);
+            JpsNode end = path.get(i + 1);
+
+            float startX = start.x;  // Get the X coordinate of the start point
+            float startY = start.y;  // Get the Y coordinate of the start point
+            float endX = end.x;      // Get the X coordinate of the end point
+            float endY = end.y;      // Get the Y coordinate of the end point
+
+            canvas.drawLine(startX, startY, endX, endY, paint);  // Draw a line between start and end
         }
 
         // Set the modified bitmap with the drawn path back to the ImageView
         mapImageView.setImageBitmap(mutableMap);
     }
+
 
 }

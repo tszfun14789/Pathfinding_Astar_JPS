@@ -212,12 +212,54 @@ public class JumpPointPreprocessor {
 
     // Reconstruct the path from goal to start
     private List<JpsNode> reconstructPath(JpsNode node) {
-        List<JpsNode> path = new ArrayList<>();
+        List<JpsNode> jumpPoints = new ArrayList<>();
         while (node != null) {
-            path.add(node);
+            jumpPoints.add(node);
             node = node.parent;
         }
-        Collections.reverse(path);
-        return path;
+        Collections.reverse(jumpPoints);
+
+        // Interpolate the full path
+        return interpolatePath(jumpPoints);
     }
+
+
+    private List<JpsNode> interpolatePath(List<JpsNode> jumpPoints) {
+        List<JpsNode> fullPath = new ArrayList<>();
+
+        for (int i = 0; i < jumpPoints.size() - 1; i++) {
+            JpsNode start = jumpPoints.get(i);
+            JpsNode end = jumpPoints.get(i + 1);
+
+            // Add the start point
+            fullPath.add(start);
+
+            // Interpolate points between start and end
+            int dx = end.x - start.x;
+            int dy = end.y - start.y;
+
+            int stepX = Integer.signum(dx); // Direction of x movement
+            int stepY = Integer.signum(dy); // Direction of y movement
+
+            int x = start.x;
+            int y = start.y;
+
+            // Add all intermediate points except the end point
+            while (x != end.x || y != end.y) {
+                if (x != end.x) x += stepX;
+                if (y != end.y) y += stepY;
+
+                if (x != end.x || y != end.y) {
+                    fullPath.add(new JpsNode(x, y));
+                }
+            }
+        }
+
+        // Add the last point
+        fullPath.add(jumpPoints.get(jumpPoints.size() - 1));
+
+        return fullPath;
+    }
+
+
 }
