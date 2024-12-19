@@ -1,8 +1,8 @@
 package com.example.pathfinding;
 
 import android.os.Build;
-
 import com.google.gson.Gson;
+import com.google.gson.reflect.TypeToken;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
@@ -28,15 +28,17 @@ public class JumpPointPreprocessor {
             }
             System.out.println();
         }
+
+        // Loop through every node to find the jump points
         for (int x = 0; x < grid.width; x++) {
             for (int y = 0; y < grid.height; y++) {
                 JpsNode start = new JpsNode(x, y);
-//                if (!grid.isWalkable(x, y)) continue; // Skip obstacles
                 if (!grid.isWalkable(x, y)) {
-                    // Point is an obstacle, print a message and skip
+                    // Skip obstacles
                     System.out.println("Node (" + x + ", " + y + ") is an obstacle.");
                     continue;
                 }
+
                 List<JpsNode> jumpPoints = new ArrayList<>();
                 for (Direction dir : Direction.values()) { // Check all 8 directions
                     JpsNode jumpPoint = findJumpPoint(start, dir, grid);
@@ -59,7 +61,7 @@ public class JumpPointPreprocessor {
         }
     }
 
-    // Find the jump point in a given direction (simplified placeholder)
+    // Find the jump point in a given direction
     private JpsNode findJumpPoint(JpsNode start, Direction dir, JpsGrid grid) {
         int x = start.x;
         int y = start.y;
@@ -78,15 +80,13 @@ public class JumpPointPreprocessor {
                 return new JpsNode(x, y);
             }
 
-            // Stop for obstacles
+            // Stop if the node is not walkable
             if (!grid.isWalkable(x, y)) {
                 return null;
             }
         }
         return null;
     }
-
-
 
     // Save the precomputed jump points to a file
     public void saveJumpPointsToFile(String filePath) throws IOException {
@@ -102,7 +102,9 @@ public class JumpPointPreprocessor {
         if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
             content = new String(Files.readAllBytes(Paths.get(filePath)));
         }
-        jumpPointsMap = new Gson().fromJson(content, Map.class);
+
+        // Use TypeToken for correct deserialization
+        jumpPointsMap = new Gson().fromJson(content, new TypeToken<Map<JpsNode, List<JpsNode>>>(){}.getType());
     }
 
     // Get the precomputed jump points for a node
@@ -123,13 +125,37 @@ public class JumpPointPreprocessor {
             JpsNode current = openList.poll();
 
             if (current.equals(goal)) {
-                return reconstructPath(current);
+                List<JpsNode> path = reconstructPath(current);
+                System.out.println("Path found: ");
+                for (JpsNode step : path) {
+                    System.out.println(step);
+                }
+                return path;
             }
 
             closedList.add(current);
 
             // Use precomputed jump points
             List<JpsNode> jumpPoints = getJumpPoints(current);
+
+            // Add direct neighbors for traversal
+            List<JpsNode> neighbors = getDirectNeighbors(current);
+
+            for (JpsNode neighbor : neighbors) {
+                if (closedList.contains(neighbor)) continue;
+
+                double tentativeG = current.g + distance(current, neighbor);
+
+                if (!openList.contains(neighbor) || tentativeG < neighbor.g) {
+                    neighbor.g = tentativeG;
+                    neighbor.f = neighbor.g + heuristic(neighbor, goal);
+                    neighbor.parent = current;
+
+                    if (!openList.contains(neighbor)) {
+                        openList.add(neighbor);
+                    }
+                }
+            }
 
             for (JpsNode jumpPoint : jumpPoints) {
                 if (closedList.contains(jumpPoint)) continue;
@@ -148,6 +174,30 @@ public class JumpPointPreprocessor {
             }
         }
         return null; // No path found
+    }
+
+    // Get direct neighbors, optimized for JPS
+    private List<JpsNode> getDirectNeighbors(JpsNode node) {
+        List<JpsNode> neighbors = new ArrayList<>();
+        int[][] directions = {
+                {-1, 0},  {1, 0},   // Up, Down
+                {0, -1},  {0, 1},   // Left, Right
+                {-1, -1}, {-1, 1},  // Top-left, Top-right
+                {1, -1},  {1, 1}    // Bottom-left, Bottom-right
+        };
+
+        for (int[] dir : directions) {
+            int newX = node.x;
+            int newY = node.y;
+
+            // Keep moving in the same direction until hitting an obstacle or boundary
+            while (grid.isWalkable(newX + dir[0], newY + dir[1])) {
+                newX += dir[0];
+                newY += dir[1];
+                neighbors.add(new JpsNode(newX, newY));
+            }
+        }
+        return neighbors;
     }
 
     // Heuristic function (Manhattan distance)
