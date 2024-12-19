@@ -157,29 +157,39 @@ public class MainActivity extends AppCompatActivity {
 //        });
 
         // Calculate Path functionality
+//        btnCalculatePath.setOnClickListener(new View.OnClickListener() {
+//            @Override
+//            public void onClick(View v) {
+//                if (Constants.startPoint != null && Constants.endPoint != null) {
+////                    new CalculatePathTask().execute();  // Use AsyncTask to calculate path
+//                    int[][] gridData = new int[][] {
+//                            {0, 0, 0, 0, 0},
+//                            {0, 0, 0, 0, 0},
+//                            {0, 1, 1, 0, 0},
+//                            {0, 0, 0, 1, 0},
+//                            {0, 0, 0, 0, 0}
+//                    };
+//
+//                    JpsGrid jpsGrid = new JpsGrid(gridData);  // Using the constructor that takes a grid
+//
+//// Log walkable grid
+//                    for (int i = 0; i < jpsGrid.width; i++) {
+//                        System.out.print("Row " + i + ": ");
+//                        for (int j = 0; j < jpsGrid.height; j++) {
+//                            System.out.print(jpsGrid.walkable[i][j] ? "0 " : "X ");  // 'X' for obstacles, '0' for walkable
+//                        }
+//                        System.out.println();
+//                    }
+//                } else {
+//                    updateStatus("Please select both start and end points.");
+//                }
+//            }
+//        });
         btnCalculatePath.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
                 if (Constants.startPoint != null && Constants.endPoint != null) {
-//                    new CalculatePathTask().execute();  // Use AsyncTask to calculate path
-                    int[][] gridData = new int[][] {
-                            {0, 0, 0, 0, 0},
-                            {0, 0, 0, 0, 0},
-                            {0, 1, 1, 0, 0},
-                            {0, 0, 0, 1, 0},
-                            {0, 0, 0, 0, 0}
-                    };
-
-                    JpsGrid jpsGrid = new JpsGrid(gridData);  // Using the constructor that takes a grid
-
-// Log walkable grid
-                    for (int i = 0; i < jpsGrid.width; i++) {
-                        System.out.print("Row " + i + ": ");
-                        for (int j = 0; j < jpsGrid.height; j++) {
-                            System.out.print(jpsGrid.walkable[i][j] ? "0 " : "X ");  // 'X' for obstacles, '0' for walkable
-                        }
-                        System.out.println();
-                    }
+                    new CalculatePathTask().execute();  // Use AsyncTask to calculate path
                 } else {
                     updateStatus("Please select both start and end points.");
                 }
@@ -389,20 +399,16 @@ public class MainActivity extends AppCompatActivity {
         paint.setStrokeWidth(1);     // Line width for the path
 
         // Loop through the nodes in the path and draw a line between consecutive points
-        for (int i = 0; i < path.size() - 1; i++) {
-            JpsNode start = path.get(i);
-            JpsNode end = path.get(i + 1);
-
-            float startX = start.x;  // Get the X coordinate of the start point
-            float startY = start.y;  // Get the Y coordinate of the start point
-            float endX = end.x;      // Get the X coordinate of the end point
-            float endY = end.y;      // Get the Y coordinate of the end point
-
-            canvas.drawLine(startX, startY, endX, endY, paint);  // Draw a line between start and end
+        for (JpsNode node : path) {
+            float x = node.x;  // Get the X coordinate
+            float y = node.y;  // Get the Y coordinate
+            canvas.drawCircle(x, y, 1, paint);  // Draw a small circle at each node's position
         }
 
         // Set the modified bitmap with the drawn path back to the ImageView
         mapImageView.setImageBitmap(mutableMap);
+
+
     }
 
 

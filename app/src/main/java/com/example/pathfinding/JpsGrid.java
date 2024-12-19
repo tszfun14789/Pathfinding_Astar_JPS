@@ -10,17 +10,19 @@ class JpsGrid {
         walkable = new boolean[width][height];
     }
     public JpsGrid(int[][] grid) {
-        this.width = grid.length; // Assuming rows are the width
-        this.height = grid[0].length; // Assuming columns are the height
-        walkable = new boolean[width][height];
+        // Assuming input grid has rows as height and columns as width
+        this.height = grid.length; // Number of rows
+        this.width = grid[0].length; // Number of columns
+        walkable = new boolean[width][height]; // Transpose for proper orientation
 
         // Convert the int grid to the boolean walkable grid
-        for (int x = 0; x < width; x++) {
-            for (int y = 0; y < height; y++) {
-                walkable[x][y] = grid[x][y] == 0; // Assuming '0' is walkable and non-zero is not walkable
+        for (int y = 0; y < height; y++) { // Iterate rows
+            for (int x = 0; x < width; x++) { // Iterate columns
+                walkable[x][y] = grid[y][x] == 0; // Transpose during assignment
             }
         }
     }
+
     public boolean isWalkable(int x, int y) {
         return x >= 0 && x < width && y >= 0 && y < height && walkable[x][y];
     }

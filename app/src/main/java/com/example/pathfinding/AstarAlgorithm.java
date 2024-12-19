@@ -5,6 +5,7 @@ import java.util.*;
 public class AstarAlgorithm {
 
     public static List<Node> findPath(Node start, Node goal, int[][] grid) {
+
         int rows = grid.length;    // Rows correspond to Y-axis
         int cols = grid[0].length; // Columns correspond to X-axis
 
@@ -55,10 +56,14 @@ public class AstarAlgorithm {
                     }
                 }
             }
+
         }
 
+
         // Return empty list if no path is found
+
         return new ArrayList<>();
+
     }
 
     private static String nodeKey(int x, int y) {
