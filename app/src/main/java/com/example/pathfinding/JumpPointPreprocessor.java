@@ -21,44 +21,65 @@ public class JumpPointPreprocessor {
     // Precompute all jump points for the grid
     public void precomputeJumpPoints() {
         jumpPointsMap.clear();
-        for (int i = 0; i < grid.width; i++) {
-            System.out.print("Row " + i + ": ");
-            for (int j = 0; j < grid.height; j++) {
-                System.out.print(grid.walkable[i][j] ? "0 " : "X ");  // 'X' for obstacles, '0' for walkable
-            }
-            System.out.println();
-        }
 
-        // Loop through every node to find the jump points
+        // Only process nodes that could potentially be jump points
         for (int x = 0; x < grid.width; x++) {
             for (int y = 0; y < grid.height; y++) {
-                JpsNode start = new JpsNode(x, y);
                 if (!grid.isWalkable(x, y)) {
-                    // Skip obstacles
-                    System.out.println("Node (" + x + ", " + y + ") is an obstacle.");
                     continue;
                 }
 
+                // Only process nodes near obstacles or at grid boundaries
+                if (!isNearObstacleOrBoundary(x, y)) {
+                    continue;
+                }
+
+                JpsNode start = new JpsNode(x, y);
                 List<JpsNode> jumpPoints = new ArrayList<>();
-                for (Direction dir : Direction.values()) { // Check all 8 directions
+
+                // For straight directions, only process if there's an obstacle adjacent
+                for (Direction dir : Direction.values()) {
+                    if (!dir.isDiagonal() && !hasAdjacentObstacle(x, y, dir)) {
+                        continue;
+                    }
                     JpsNode jumpPoint = findJumpPoint(start, dir, grid);
                     if (jumpPoint != null) {
                         jumpPoints.add(jumpPoint);
                     }
                 }
-                jumpPointsMap.put(start, jumpPoints);
+
+                if (!jumpPoints.isEmpty()) {
+                    jumpPointsMap.put(start, jumpPoints);
+                }
             }
+        }
+    }
+
+    private boolean isNearObstacleOrBoundary(int x, int y) {
+        // Check if node is near grid boundary
+        if (x <= 1 || x >= grid.width - 2 || y <= 1 || y >= grid.height - 2) {
+            return true;
         }
 
-        // Print precomputed jump points
-        System.out.println("Precomputed Jump Points:");
-        for (Map.Entry<JpsNode, List<JpsNode>> entry : jumpPointsMap.entrySet()) {
-            System.out.print("Node " + entry.getKey() + " -> Jump Points: ");
-            for (JpsNode jp : entry.getValue()) {
-                System.out.print("(" + jp.x + ", " + jp.y + ") ");
+        // Check if node is near an obstacle (8-connected neighborhood)
+        for (int dx = -1; dx <= 1; dx++) {
+            for (int dy = -1; dy <= 1; dy++) {
+                if (dx == 0 && dy == 0) continue;
+                if (!grid.isWalkable(x + dx, y + dy)) {
+                    return true;
+                }
             }
-            System.out.println();
         }
+        return false;
+    }
+
+    private boolean hasAdjacentObstacle(int x, int y, Direction dir) {
+        // Check perpendicular directions for obstacles
+        int perpX = dir.dy; // Perpendicular direction
+        int perpY = -dir.dx;
+
+        return !grid.isWalkable(x + perpX, y + perpY) ||
+                !grid.isWalkable(x - perpX, y - perpY);
     }
 
     // Find the jump point in a given direction
@@ -114,101 +135,134 @@ public class JumpPointPreprocessor {
 
     // Modify JPS algorithm to use precomputed jump points
     public List<JpsNode> searchWithPrecomputedJPS(JpsNode start, JpsNode goal) {
-        PriorityQueue<JpsNode> openList = new PriorityQueue<>();
-        Set<JpsNode> closedList = new HashSet<>();
+        Map<String, JpsNode> nodeMap = new HashMap<>();  // Keep track of actual nodes
+        Set<String> closedSet = new HashSet<>();
+        PriorityQueue<JpsNode> openList = new PriorityQueue<>((a, b) -> Double.compare(a.f, b.f));
 
         start.g = 0;
         start.f = heuristic(start, goal);
         openList.add(start);
+        nodeMap.put(nodeKey(start), start);
 
         while (!openList.isEmpty()) {
             JpsNode current = openList.poll();
+            String currentKey = nodeKey(current);
 
             if (current.equals(goal)) {
-                List<JpsNode> path = reconstructPath(current);
-                System.out.println("Path found: ");
-                for (JpsNode step : path) {
-                    System.out.println(step);
-                }
-                return path;
+                return reconstructPath(current);
             }
 
-            closedList.add(current);
-
-            // Use precomputed jump points
-            List<JpsNode> jumpPoints = getJumpPoints(current);
-
-            // Add direct neighbors for traversal
-            List<JpsNode> neighbors = getDirectNeighbors(current);
-
-            for (JpsNode neighbor : neighbors) {
-                if (closedList.contains(neighbor)) continue;
-
-                double tentativeG = current.g + distance(current, neighbor);
-
-                if (!openList.contains(neighbor) || tentativeG < neighbor.g) {
-                    neighbor.g = tentativeG;
-                    neighbor.f = neighbor.g + heuristic(neighbor, goal);
-                    neighbor.parent = current;
-
-                    if (!openList.contains(neighbor)) {
-                        openList.add(neighbor);
-                    }
-                }
+            if (closedSet.contains(currentKey)) {
+                continue;
             }
+            closedSet.add(currentKey);
 
+            // First, check precomputed jump points
+            List<JpsNode> jumpPoints = jumpPointsMap.getOrDefault(current, Collections.emptyList());
             for (JpsNode jumpPoint : jumpPoints) {
-                if (closedList.contains(jumpPoint)) continue;
-
-                double tentativeG = current.g + distance(current, jumpPoint);
-
-                if (!openList.contains(jumpPoint) || tentativeG < jumpPoint.g) {
-                    jumpPoint.g = tentativeG;
-                    jumpPoint.f = jumpPoint.g + heuristic(jumpPoint, goal);
-                    jumpPoint.parent = current;
-
-                    if (!openList.contains(jumpPoint)) {
-                        openList.add(jumpPoint);
-                    }
-                }
+                processSuccessor(jumpPoint, current, goal, openList, closedSet, nodeMap);
             }
+
+            // Then process natural neighbors
+            processNaturalNeighbors(current, goal, openList, closedSet, nodeMap);
         }
-        return null; // No path found
+
+        return null;
     }
 
-    // Get direct neighbors, optimized for JPS
-    private List<JpsNode> getDirectNeighbors(JpsNode node) {
-        List<JpsNode> neighbors = new ArrayList<>();
-        int[][] directions = {
-                {-1, 0},  {1, 0},   // Up, Down
-                {0, -1},  {0, 1},   // Left, Right
-                {-1, -1}, {-1, 1},  // Top-left, Top-right
-                {1, -1},  {1, 1}    // Bottom-left, Bottom-right
-        };
+    private void processNaturalNeighbors(JpsNode current, JpsNode goal,
+                                         PriorityQueue<JpsNode> openList,
+                                         Set<String> closedSet,
+                                         Map<String, JpsNode> nodeMap) {
+        // Straight directions
+        int[][] straight = {{0,1}, {1,0}, {0,-1}, {-1,0}};
+        // Diagonal directions
+        int[][] diagonal = {{1,1}, {1,-1}, {-1,1}, {-1,-1}};
 
-        for (int[] dir : directions) {
-            int newX = node.x;
-            int newY = node.y;
+        // Process straight neighbors
+        for (int[] dir : straight) {
+            int newX = current.x + dir[0];
+            int newY = current.y + dir[1];
 
-            // Keep moving in the same direction until hitting an obstacle or boundary
-            while (grid.isWalkable(newX + dir[0], newY + dir[1])) {
-                newX += dir[0];
-                newY += dir[1];
-                neighbors.add(new JpsNode(newX, newY));
+            if (!grid.isWalkable(newX, newY)) {
+                continue;
             }
+
+            JpsNode neighbor = new JpsNode(newX, newY);
+            processSuccessor(neighbor, current, goal, openList, closedSet, nodeMap);
         }
-        return neighbors;
+
+        // Process diagonal neighbors
+        for (int[] dir : diagonal) {
+            int newX = current.x + dir[0];
+            int newY = current.y + dir[1];
+
+            if (!grid.isWalkable(newX, newY)) {
+                continue;
+            }
+
+            // Check if we can move diagonally (both adjacent cells must be walkable)
+            if (!grid.isWalkable(current.x + dir[0], current.y)  ||
+                    !grid.isWalkable(current.x, current.y + dir[1])) {
+                continue;
+            }
+
+            JpsNode neighbor = new JpsNode(newX, newY);
+            processSuccessor(neighbor, current, goal, openList, closedSet, nodeMap);
+        }
     }
 
-    // Heuristic function (Manhattan distance)
-    private double heuristic(JpsNode a, JpsNode b) {
-        return Math.abs(a.x - b.x) + Math.abs(a.y - b.y);
+    private void processSuccessor(JpsNode successor, JpsNode current, JpsNode goal,
+                                  PriorityQueue<JpsNode> openList,
+                                  Set<String> closedSet,
+                                  Map<String, JpsNode> nodeMap) {
+        String successorKey = nodeKey(successor);
+
+        if (closedSet.contains(successorKey)) {
+            return;
+        }
+
+        double tentativeG = current.g + distance(current, successor);
+
+        JpsNode existingNode = nodeMap.get(successorKey);
+        if (existingNode == null) {
+            successor.g = tentativeG;
+            successor.f = successor.g + heuristic(successor, goal);
+            successor.parent = current;
+            openList.add(successor);
+            nodeMap.put(successorKey, successor);
+        } else if (tentativeG < existingNode.g) {
+            existingNode.g = tentativeG;
+            existingNode.f = existingNode.g + heuristic(existingNode, goal);
+            existingNode.parent = current;
+            // Re-add to update position in priority queue
+            openList.remove(existingNode);
+            openList.add(existingNode);
+        }
     }
 
-    // Distance between two nodes
+    private String nodeKey(JpsNode node) {
+        return node.x + "," + node.y;
+    }
+
     private double distance(JpsNode a, JpsNode b) {
-        return Math.hypot(a.x - b.x, a.y - b.y);
+        int dx = Math.abs(a.x - b.x);
+        int dy = Math.abs(a.y - b.y);
+        // Use octile distance for more accurate estimation
+        return Math.max(dx, dy) + (Math.sqrt(2) - 1) * Math.min(dx, dy);
     }
+
+    private double heuristic(JpsNode a, JpsNode b) {
+        int dx = Math.abs(a.x - b.x);
+        int dy = Math.abs(a.y - b.y);
+        return Math.max(dx, dy) + (Math.sqrt(2) - 1) * Math.min(dx, dy);
+    }
+
+
+
+
+
+
 
     // Reconstruct the path from goal to start
     private List<JpsNode> reconstructPath(JpsNode node) {
@@ -231,32 +285,28 @@ public class JumpPointPreprocessor {
             JpsNode start = jumpPoints.get(i);
             JpsNode end = jumpPoints.get(i + 1);
 
-            // Add the start point
-            fullPath.add(start);
-
-            // Interpolate points between start and end
             int dx = end.x - start.x;
             int dy = end.y - start.y;
 
-            int stepX = Integer.signum(dx); // Direction of x movement
-            int stepY = Integer.signum(dy); // Direction of y movement
+            int stepX = Integer.signum(dx);
+            int stepY = Integer.signum(dy);
 
-            int x = start.x;
-            int y = start.y;
+            int x = start.x, y = start.y;
 
-            // Add all intermediate points except the end point
+            fullPath.add(new JpsNode(x, y)); // Add the start point
+
+            // Interpolate points until reaching the endpoint
             while (x != end.x || y != end.y) {
                 if (x != end.x) x += stepX;
                 if (y != end.y) y += stepY;
-
-                if (x != end.x || y != end.y) {
-                    fullPath.add(new JpsNode(x, y));
-                }
+                fullPath.add(new JpsNode(x, y));
             }
         }
 
         // Add the last point
-        fullPath.add(jumpPoints.get(jumpPoints.size() - 1));
+        if (!jumpPoints.isEmpty()) {
+            fullPath.add(jumpPoints.get(jumpPoints.size() - 1));
+        }
 
         return fullPath;
     }
