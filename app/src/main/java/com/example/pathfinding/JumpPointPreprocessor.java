@@ -253,9 +253,9 @@ public class JumpPointPreprocessor {
     }
 
     private double heuristic(JpsNode a, JpsNode b) {
-        int dx = Math.abs(a.x - b.x);
-        int dy = Math.abs(a.y - b.y);
-        return Math.max(dx, dy) + (Math.sqrt(2) - 1) * Math.min(dx, dy);
+        int dx = a.x - b.x;
+        int dy = a.y - b.y;
+        return Math.sqrt(dx * dx + dy * dy);
     }
 
 
@@ -285,28 +285,32 @@ public class JumpPointPreprocessor {
             JpsNode start = jumpPoints.get(i);
             JpsNode end = jumpPoints.get(i + 1);
 
+            // Add the start point
+            fullPath.add(start);
+
+            // Interpolate points between start and end
             int dx = end.x - start.x;
             int dy = end.y - start.y;
 
-            int stepX = Integer.signum(dx);
-            int stepY = Integer.signum(dy);
+            int stepX = Integer.signum(dx); // Direction of x movement
+            int stepY = Integer.signum(dy); // Direction of y movement
 
-            int x = start.x, y = start.y;
+            int x = start.x;
+            int y = start.y;
 
-            fullPath.add(new JpsNode(x, y)); // Add the start point
-
-            // Interpolate points until reaching the endpoint
+            // Add all intermediate points except the end point
             while (x != end.x || y != end.y) {
                 if (x != end.x) x += stepX;
                 if (y != end.y) y += stepY;
-                fullPath.add(new JpsNode(x, y));
+
+                if (x != end.x || y != end.y) {
+                    fullPath.add(new JpsNode(x, y));
+                }
             }
         }
 
         // Add the last point
-        if (!jumpPoints.isEmpty()) {
-            fullPath.add(jumpPoints.get(jumpPoints.size() - 1));
-        }
+        fullPath.add(jumpPoints.get(jumpPoints.size() - 1));
 
         return fullPath;
     }

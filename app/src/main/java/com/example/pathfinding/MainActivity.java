@@ -72,7 +72,11 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void onClick(View v) {
                 openGallery();
+                runOnUiThread(() -> scaleanddrag.resetScaleAndDrag());
+
             }
+
+
         });
 
         btnSelectPoints.setOnClickListener(new View.OnClickListener() {
@@ -265,6 +269,10 @@ public class MainActivity extends AppCompatActivity {
         if (requestCode == PICK_IMAGE_REQUEST && resultCode == RESULT_OK && data != null && data.getData() != null) {
             Uri imageUri = data.getData();
             loadMapImage(imageUri);  // Load the image after selection
+
+            isFirstJpsRun = true;
+
+
         }
     }
 

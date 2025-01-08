@@ -131,4 +131,30 @@ public class scaleanddrag extends AppCompatActivity {
         view.setImageMatrix(matrix);
         return true; // indicate event was handled
     }
+
+    public void resetScaleAndDrag() {
+        // Reset the matrix to its default state (identity matrix)
+        matrix.reset();
+        savedMatrix.reset();
+        inverseMatrix.reset();
+
+
+
+        // Reset related variables
+        mode = NONE;
+        drag_count = 0;
+        map_scale = 1.0f; // Optional: Reset the scale to the default value
+        startPoint = null;
+        endPoint = null;
+        // Apply the reset matrix to the ImageView
+        if (imageView_map != null) {
+            imageView_map.setImageMatrix(matrix);
+            imageView_map.invalidate(); // Force a redraw of the ImageView
+            imageView_map.requestLayout(); // Ensure layout adjustments if needed
+
+        }
+        // Optionally update the UI or notify the user
+        MainActivity.updateStatus("Scale and drag reset.");
+    }
+
 }

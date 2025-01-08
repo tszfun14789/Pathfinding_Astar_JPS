@@ -29,13 +29,13 @@
         android:id="@+id/btnCalculatePath"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="Calculate Path" />
+        android:text="A* Calculate Path" />
 
     <Button
         android:id="@+id/btnRunJps"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="JPS Calculate Path" />
+        android:text="JPS Preprocess/ Calculate Path" />
 
 
     <TextView
