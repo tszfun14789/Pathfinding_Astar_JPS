@@ -35,6 +35,10 @@ public class scaleanddrag extends AppCompatActivity {
     PointF mid = new PointF();
     float oldDist = 1f;
 
+    public void setImageView(ImageView imageView) {
+        this.imageView_map = imageView;
+    }
+
     private float spacing(MotionEvent event) {
         float x = event.getX(0) - event.getX(1);
         float y = event.getY(0) - event.getY(1);
@@ -133,28 +137,25 @@ public class scaleanddrag extends AppCompatActivity {
     }
 
     public void resetScaleAndDrag() {
-        // Reset the matrix to its default state (identity matrix)
+        // Reset the matrix to its default state
         matrix.reset();
         savedMatrix.reset();
         inverseMatrix.reset();
 
-
-
         // Reset related variables
         mode = NONE;
         drag_count = 0;
-        map_scale = 1.0f; // Optional: Reset the scale to the default value
+        map_scale = 1.0f;
         startPoint = null;
         endPoint = null;
+
         // Apply the reset matrix to the ImageView
         if (imageView_map != null) {
             imageView_map.setImageMatrix(matrix);
-            imageView_map.invalidate(); // Force a redraw of the ImageView
-            imageView_map.requestLayout(); // Ensure layout adjustments if needed
-
+            imageView_map.invalidate();
         }
-        // Optionally update the UI or notify the user
-        MainActivity.updateStatus("Scale and drag reset.");
+
+        MainActivity.updateStatus("Map reset to original position.");
     }
 
 }

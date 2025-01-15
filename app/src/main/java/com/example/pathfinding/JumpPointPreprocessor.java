@@ -91,7 +91,7 @@ public class JumpPointPreprocessor {
             x += dir.dx;
             y += dir.dy;
 
-            // Stop if out of grid boundaries
+            // Stop if out of grid boundaries`
             if (!grid.isInBounds(x, y)) {
                 return null;
             }

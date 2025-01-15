@@ -64,6 +64,8 @@ public class MainActivity extends AppCompatActivity {
 
         mapImageView = findViewById(R.id.mapImageView);
         scaleanddrag = new scaleanddrag();
+        scaleanddrag.setImageView(mapImageView);  // Add this line to pass the ImageView reference
+
         tvStatus = findViewById(R.id.tvStatus);
         progressBar = findViewById(R.id.progressBar);
 
@@ -72,8 +74,6 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void onClick(View v) {
                 openGallery();
-                runOnUiThread(() -> scaleanddrag.resetScaleAndDrag());
-
             }
 
 
@@ -223,6 +223,8 @@ public class MainActivity extends AppCompatActivity {
         }
     }
     private class RunJpsTask extends AsyncTask<Void, Void, List<JpsNode>> {
+        private long executionTime;
+
         @Override
         protected void onPreExecute() {
             super.onPreExecute();
@@ -236,10 +238,10 @@ public class MainActivity extends AppCompatActivity {
             System.out.println("Start Node: (" + startNode.x + ", " + startNode.y + ")");
             System.out.println("End Node: (" + endNode.x + ", " + endNode.y + ")");
 
-
-
-            return jpp.searchWithPrecomputedJPS(startNode, endNode);
-        }
+            long startTime = System.currentTimeMillis();
+            List<JpsNode> path = jpp.searchWithPrecomputedJPS(startNode, endNode);
+            executionTime = System.currentTimeMillis() - startTime;
+            return path;        }
 
         @Override
         protected void onPostExecute(List<JpsNode> path) {
@@ -247,7 +249,7 @@ public class MainActivity extends AppCompatActivity {
             progressBar.setVisibility(View.INVISIBLE);
 
             if (path != null && !path.isEmpty()) {
-                updateStatus("Path found with " + path.size() + " steps.");
+                updateStatus("JPS Path found with " + path.size() + " steps. Time: " + executionTime + "ms");
                 drawJPSPathOnMap(mapBitmap, path);
 //                drawPathOnMap(mapBitmap, path);  // Draw the path on the map
             } else {
@@ -268,11 +270,10 @@ public class MainActivity extends AppCompatActivity {
         super.onActivityResult(requestCode, resultCode, data);
         if (requestCode == PICK_IMAGE_REQUEST && resultCode == RESULT_OK && data != null && data.getData() != null) {
             Uri imageUri = data.getData();
+            // Reset scale and position BEFORE loading the new image
+            scaleanddrag.resetScaleAndDrag();
             loadMapImage(imageUri);  // Load the image after selection
-
             isFirstJpsRun = true;
-
-
         }
     }
 
@@ -280,22 +281,23 @@ public class MainActivity extends AppCompatActivity {
     private void loadMapImage(Uri imageUri) {
         try {
             mapBitmap = MediaStore.Images.Media.getBitmap(getContentResolver(), imageUri);
+            mapImageView.setScaleType(ImageView.ScaleType.MATRIX);
+            mapImageView.setImageBitmap(mapBitmap);
 
-            mapImageView.setImageBitmap(mapBitmap);  // Display the Bitmap in ImageView
-
-            int[][] grid = getGridFromBitmap(mapBitmap); // Method to convert bitmap to grid
-
+            int[][] grid = getGridFromBitmap(mapBitmap);
+            isFirstJpsRun = true;
         } catch (IOException e) {
             e.printStackTrace();
         }
     }
-
     public static void updateStatus(String message) {
         tvStatus.setText("Status: " + message);
     }
 
     // AsyncTask to calculate the path on a background thread
     private class CalculatePathTask extends AsyncTask<Void, Void, List<Node>> {
+        private long executionTime;
+
         @Override
         protected void onPreExecute() {
             super.onPreExecute();
@@ -305,8 +307,10 @@ public class MainActivity extends AppCompatActivity {
         @Override
         protected List<Node> doInBackground(Void... voids) {
             // Perform the pathfinding work in the background
-            return calculateAndDisplayPath();
-        }
+            long startTime = System.currentTimeMillis();
+            List<Node> path = calculateAndDisplayPath();
+            executionTime = System.currentTimeMillis() - startTime;
+            return path;        }
 
         @Override
         protected void onPostExecute(List<Node> path) {
@@ -314,7 +318,7 @@ public class MainActivity extends AppCompatActivity {
             progressBar.setVisibility(View.INVISIBLE);  // Hide progress bar once task is done
 
             if (path != null && !path.isEmpty()) {
-                updateStatus("Path found with " + path.size() + " steps.");
+                updateStatus("A* Path found with " + path.size() + " steps. Time: " + executionTime + "ms");
                 drawPathOnMap(mapBitmap, path);  // Draw the path on the map
             } else {
                 updateStatus("No path found.");
