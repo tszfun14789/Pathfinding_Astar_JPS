@@ -48,3 +48,33 @@ Thumbs.db
 *.mov
 *.wmv
 
+# Gradle files
+.gradle/
+build/
+
+# Local configuration file (SDK, etc.)
+local.properties
+
+# IDE files
+.idea/
+*.iml
+
+# Generated files
+/captures/
+/output/
+
+# Miscellaneous
+.DS_Store
+*.log
+*.class
+
+# Android Studio specific files
+/.cxx/
+/.externalNativeBuild/
+
+# Signing files
+*.jks
+
+# Other files
+*.apk
+*.keystore
