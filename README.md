@@ -1,45 +1,62 @@
-**Edit a file, create a new file, and clone from Bitbucket in under 2 minutes**
+# Pathfinding Visualization App
 
-When you're done, you can delete the content in this README and update the file with details for others getting started with your repository.
+An Android application that demonstrates different pathfinding algorithms with interactive visualization. The app allows users to upload custom maps, select start/end points, and visualize pathfinding algorithms.
 
-*We recommend that you open this README in another tab as you perform the tasks below. You can [watch our video](https://youtu.be/0ocf7u76WSo) for a full demo of all the steps in this tutorial. Open the video in a new tab to avoid leaving Bitbucket.*
+## Features
 
----
+### Map Management
+- Upload custom maps from device gallery
+- Interactive map viewing with zoom and pan capabilities
+- grid generation from bitmap images
+- Black pixels are treated as obstacles, white pixels as walkable areas
 
-## Edit a file
+### Pathfinding Algorithms
+1. **A* (A-Star)**
+   - Traditional pathfinding algorithm
+   - Uses Manhattan distance heuristic
+   - Supports both cardinal and diagonal movements
+   - Cost: 10 for cardinal directions, 14 for diagonal
 
-You’ll start by editing this README file to learn how to edit a file in Bitbucket.
+2. **JPS (Jump Point Search)**
+   - Optimized pathfinding algorithm
+   - Includes preprocessing for better performance
+   - Reduces the number of nodes explored
+   - Particularly efficient for open areas
 
-1. Click **Source** on the left side.
-2. Click the README.md link from the list of files.
-3. Click the **Edit** button.
-4. Delete the following text: *Delete this line to make a change to the README from Bitbucket.*
-5. After making your change, click **Commit** and then **Commit** again in the dialog. The commit page will open and you’ll see the change you just made.
-6. Go back to the **Source** page.
+## Usage
 
----
+1. **Upload Map**
+   - Click "Upload Map" button
+   - Select an image from gallery
+   - Map will be processed automatically
 
-## Create a file
+2. **Select Points**
+   - Click "Select Points" to reset current points
+   - Tap on the map to set start point (first tap)
+   - Tap again to set end point (second tap)
 
-Next, you’ll add a new file to this repository.
+3. **Calculate Path**
+   - Choose between A* and JPS algorithms
+   - Click respective button to calculate path
+   - Path will be displayed on the map
+   - Status updates show calculation progress
 
-1. Click the **New file** button at the top of the **Source** page.
-2. Give the file a filename of **contributors.txt**.
-3. Enter your name in the empty file space.
-4. Click **Commit** and then **Commit** again in the dialog.
-5. Go back to the **Source** page.
+## Implementation Details
 
-Before you move on, go ahead and explore the repository. You've already seen the **Source** page, but check out the **Commits**, **Branches**, and **Settings** pages.
+### Core Components
+- `MainActivity`: Main UI and interaction handling
+- `AstarAlgorithm`: A* pathfinding implementation
+- `JumpPointPreprocessor`: JPS algorithm with preprocessing
+- `scaleanddrag`: Touch interaction handling
 
----
+### Data Structures
+- `Node`: Basic pathfinding node for A*
+- `JpsNode`: Specialized node for JPS
+- `JpsGrid`: Grid representation for JPS
+- `Constants`: Shared configuration values
 
-## Clone a repository
+## Performance
 
-Use these steps to clone from SourceTree, our client for using the repository command-line free. Cloning allows you to work on your files locally. If you don't yet have SourceTree, [download and install first](https://www.sourcetreeapp.com/). If you prefer to clone from the command line, see [Clone a repository](https://confluence.atlassian.com/x/4whODQ).
-
-1. You’ll see the clone button under the **Source** heading. Click that button.
-2. Now click **Check out in SourceTree**. You may need to create a SourceTree account or log in.
-3. When you see the **Clone New** dialog in SourceTree, update the destination path and name if you’d like to and then click **Clone**.
-4. Open the directory you just created to see your repository’s files.
-
-Now that you're more familiar with your Bitbucket repository, go ahead and add a new file locally. You can [push your change back to Bitbucket with SourceTree](https://confluence.atlassian.com/x/iqyBMg), or you can [add, commit,](https://confluence.atlassian.com/x/8QhODQ) and [push from the command line](https://confluence.atlassian.com/x/NQ0zDQ).
+- JPS preprocessing improves subsequent pathfinding speed
+- Asynchronous processing prevents UI freezing
+- Optimized path visualization
